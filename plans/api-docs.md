@@ -781,3 +781,115 @@ curl -X POST http://localhost:6000/api/v1/add_connection \\
 
 **Notes**:
 - Scan friend QR → get_by_access_token → AddConnections(auth.id, friend.id) uq pair event note optional.
+
+## /api/v1/health
+**Method**: GET  
+**Auth**: Public  
+**Headers**: None  
+**Body**: None
+**cURL Example**:
+```bash
+curl -X GET http://localhost:6000/api/v1/health
+```
+**Responses**:
+- **200**: `{"status": "healthy", "db_connected": true, "table_count": 15}`
+- **500**: `{"status": "unhealthy", "db_connected": false, "error": "DB connection failed"}`
+
+**Notes**:
+- Performs health check: connects to DB, lists tables count.
+- No authentication required.
+
+## /api/v1/kill_session
+**Method**: GET  
+**Auth**: `Authorization: Bearer &lt;token&gt;`  
+**Headers**: `Authorization: Bearer &lt;token&gt;`  
+**Body**: None
+**cURL Example**:
+```bash
+TOKEN="eyJ..."  
+curl -X GET http://localhost:6000/api/v1/kill_session \\
+  -H "Authorization: Bearer $TOKEN"
+```
+**Responses**:
+- **200**: `{"message": "Session killed successfully", "session": "&lt;token&gt;"}`
+- **400**: `{"message": "Authorization must be provided in header, not query parameter"}`
+- **401**: `{"message": "Authorization header required"}` or `{"message": "Invalid or expired token"}`
+- **404**: `{"message": "Session not found for token"}`
+- **415**: `{"message": "Content-Type must be application/json or omitted"}`
+- **500**: `{"message": "Failed to kill session"}` or `{"message": "Internal server error"}`
+
+**Notes**:
+- Deactivates the authenticated user's current session (Status=2 inactive).
+- Identifies session using the token from Authorization header.
+- GET request, no body required.
+
+## /api/v1/reset_password
+**Method**: POST  
+**Auth**: `Authorization: Bearer &lt;token&gt;`  
+**Headers**: `Content-Type: application/json`, `Authorization: Bearer &lt;token&gt;`  
+**Body**:
+```json
+{
+  "new_password": "NewSecurePass123!",
+  "old_password": "OldPass123!",  // required for self-reset
+  "UserID": 123  // optional for admin reset other user
+}
+```
+**cURL Example**:
+```bash
+TOKEN="eyJ..."  
+curl -X POST http://localhost:6000/api/v1/reset_password \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -d '{"new_password": "NewSecurePass123!", "old_password": "OldPass123!"}'
+```
+**Responses**:
+- **200**: `{"message": "Password reset successfully", "user": {"UserID": 123, "FirstName": "John", "Email": "john@example.com", ...}}`
+- **400**: `{"message": "new_password is required"}`, `{"message": "UserID must be an integer"}`, etc.
+- **401**: `{"message": "Invalid old password"}` or `{"message": "Invalid or expired token"}`
+- **403**: `{"message": "Insufficient permissions to reset another user's password"}`
+- **404**: `{"message": "User with UserID 123 not found"}`
+- **415**: `{"message": "Content-Type must be application/json"}`
+- **500**: `{"message": "Failed to update password"}` or `{"message": "Internal server error"}`
+
+**Notes**:
+- For self-reset (no UserID): requires valid old_password.
+- Admin users (Type 1/2): can reset any user's password without old_password by providing UserID.
+- New password is automatically hashed.
+- Returns updated user profile (no password field).
+
+## /api/v1/scan_validate
+**Method**: POST  
+**Auth**: `Authorization: Bearer &lt;token&gt;` (requires 'security' role)  
+**Headers**: `Content-Type: application/json`, `Authorization: Bearer &lt;token&gt;`  
+**Body**:
+```json
+{
+  "access_token": "550e8400-e29b-41d4-a716-446655440000",
+  "zone_id": "550e8400-e29b-41d4-a716-446655440000",
+  "event_id": "550e8400-e29b-41d4-a716-446655440000",  // optional
+  "action": "enter"  // or "exit"
+}
+```
+**cURL Example**:
+```bash
+TOKEN="eyJ..."  
+curl -X POST http://localhost:6000/api/v1/scan_validate \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -d '{"access_token": "uuid-qr", "zone_id": "uuid", "action": "enter"}'
+```
+**Responses**:
+- **200**: `{"success": true, "status": "enter_ok", "message": "Enter successful", "user": {"first_name": "John", "photo_url": "https://...", "roles": ["visitor", "exhibitor_staff"]}}`
+- **400**: `{"message": "access_token, zone_id, action required"}`, `{"message": "already_in_zone"}` (status='already_in_zone'), `{"message": "capacity_full"}`, etc.
+- **401**: `{"message": "Invalid or expired token"}`
+- **403**: `{"message": "Scanner must have security role"}`, `{"message": "User role not authorized for event"}` (status='denied_role'), `{"message": "User company not in event/zone"}` (status='denied_company')
+- **404**: `{"message": "Zone not found"}` or `{"message": "Event not found"}`
+- **500**: `{"message": "Internal server error"}`
+
+**Notes**:
+- Used by security staff to validate and record user entry/exit to zones/events via QR access_token scan.
+- Checks: scanner has 'security' role, user active with exhibitor_staff/visitor role for event, user's company assigned to event/zone, not already in/out, zone capacity.
+- Automatically records ZoneScans and EventAttendance.
+- event_id optional (uses zone.event_id if omitted).
+- Returns basic user info for confirmation.

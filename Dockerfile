@@ -20,6 +20,6 @@ COPY . .
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser
 
-EXPOSE 5000
+EXPOSE 6000
 
 CMD ["python", "main.py"]
