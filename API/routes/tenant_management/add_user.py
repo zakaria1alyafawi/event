@@ -1,0 +1,113 @@
+from flask import request
+from API.routes.base import BaseRoute
+from API.utils.responses import success_response, error_response
+from API.middleware.auth import AuthManager
+from Models.Users.AddUser import AddUsers
+from Models.UserTypes.RetrieveUserTypes import RetrieveUserTypes
+from Models.UserRoles.AddUserRoles import AddUserRoles
+import logging
+
+logger = logging.getLogger("api.routes.tenant_management.add_user")
+
+class AddUserRoute(BaseRoute):
+    def __init__(self):
+        super().__init__()
+        self.auth_manager = AuthManager()
+        logger.info("AddUserRoute initialized")
+
+    def register_routes(self):
+        self.bp.route("/add_user", methods=["POST"])(self.add_user)
+
+    def add_user(self):
+        session = self.get_session()
+        try:
+            auth_header = request.headers.get("Authorization")
+
+            if not auth_header:
+                return error_response("Authorization header required", 401)
+
+            token = auth_header.replace("Bearer ", "", 1) if auth_header.startswith("Bearer ") else auth_header
+            auth_result = self.auth_manager.authenticate_request(session, token)
+            if not auth_result:
+                return error_response("Invalid or expired token", 401)
+            
+            user_id = auth_result
+            
+            data = request.get_json()
+            if not data:
+                return error_response("JSON body required", 400)
+
+            required_fields = ["first_name", "last_name", "email", "password", "role_name"]
+            missing = [field for field in required_fields if field not in data]
+            if missing:
+                return error_response(f"Missing required fields: {', '.join(missing)}", 400)
+
+            # Optional fields
+            phone = data.get("phone")
+            job_title = data.get("job_title")
+            photo_url = data.get("photo_url")
+            country = data.get("country")
+            city = data.get("city")
+            company_id = data.get("company_id")
+            auth_provider = data.get("auth_provider", "email")
+            auth_id = data.get("auth_id")
+            event_id = data.get("event_id")
+
+            adder = AddUsers(session)
+            new_user = adder.add(
+                first_name=data["first_name"],
+                last_name=data["last_name"],
+                email=data["email"],
+                password=data["password"],
+                phone=phone,
+                job_title=job_title,
+                photo_url=photo_url,
+                country=country,
+                city=city,
+                company_id=company_id,
+                auth_provider=auth_provider,
+                auth_id=auth_id
+            )
+
+            # Add role
+            retrieve_user_types = RetrieveUserTypes(session)
+            role_type = retrieve_user_types.get_by_name(data["role_name"])
+            if not role_type:
+                return error_response(f"Invalid role_name: {data['role_name']}", 400)
+
+            add_user_roles = AddUserRoles(session)
+            add_user_roles.add_role(new_user.id, role_type.id, event_id)
+
+            # Serialize safe fields
+            user_data = {
+                "id": str(new_user.id),
+                "email": new_user.email,
+                "phone": new_user.phone,
+                "first_name": new_user.first_name,
+                "last_name": new_user.last_name,
+                "display_name": new_user.display_name,
+                "job_title": new_user.job_title,
+                "photo_url": new_user.photo_url,
+                "country": new_user.country,
+                "city": new_user.city,
+                "company_id": str(new_user.company_id) if new_user.company_id else None,
+                "is_active": new_user.is_active,
+                "created_at": new_user.created_at.isoformat() if new_user.created_at else None,
+                "roles": [{
+                    "name": data["role_name"],
+                    "event_id": str(event_id) if event_id else None
+                }]
+            }
+
+            logger.info(f"Added user {new_user.email} with role {data['role_name']} (event_id: {event_id}) by user {user_id}")
+            return success_response({
+                "message": "User created successfully",
+                "user": user_data
+            }, 201)
+
+        except ValueError as ve:
+            logger.warning(f"Validation error in add_user: {ve}")
+            return error_response(str(ve), 400)
+        except Exception as e:
+            logger.error(f"Error in add_user: {e}")
+            return error_response("Internal server error", 500)
