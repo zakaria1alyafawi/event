@@ -19,22 +19,34 @@ class AddTenantRoute(BaseRoute):
     def add_tenant(self):
         session = self.get_session()
         try:
-            auth_header = request.headers.get("Authorization")
-
-            if not auth_header:
-                return error_response("Authorization header required", 401)
-
-            token = auth_header.replace("Bearer ", "", 1) if auth_header.startswith("Bearer ") else auth_header
-            auth_result = self.auth_manager.authenticate_request(session, token)
-            if not auth_result:
-                return error_response("Invalid or expired token", 401)
-            
-            user_id = auth_result
-            
             data = request.get_json()
             if not data:
                 return error_response("JSON body required", 400)
 
+            job_title = data.get("job_title", "").strip().lower()
+
+            # ==================== AUTH LOGIC ====================
+            is_visitor_registration = job_title == "visitor"
+
+            if not is_visitor_registration:
+                # Normal flow - require authentication
+                auth_header = request.headers.get("Authorization")
+                if not auth_header:
+                    return error_response("Authorization header required", 401)
+
+                token = auth_header.replace("Bearer ", "", 1) if auth_header.startswith("Bearer ") else auth_header
+                auth_result = self.auth_manager.authenticate_request(session, token)
+                if not auth_result:
+                    return error_response("Invalid or expired token", 401)
+                
+                user_id = auth_result  # the user who is creating this tenant
+                logger.info(f"Adding tenant by authorized user: {user_id}")
+            else:
+                # Public visitor registration - no auth needed
+                user_id = None
+                logger.info("Public visitor registration")
+
+            # ==================== VALIDATION ====================
             required_fields = ["first_name", "last_name", "email", "password"]
             missing = [field for field in required_fields if field not in data]
             if missing:
@@ -42,7 +54,6 @@ class AddTenantRoute(BaseRoute):
 
             # Optional fields
             phone = data.get("phone")
-            job_title = data.get("job_title")
             photo_url = data.get("photo_url")
             country = data.get("country")
             city = data.get("city")
@@ -50,6 +61,7 @@ class AddTenantRoute(BaseRoute):
             auth_provider = data.get("auth_provider", "email")
             auth_id = data.get("auth_id")
 
+            # ==================== CREATE USER ====================
             adder = AddUsers(session)
             new_user = adder.add(
                 first_name=data["first_name"],
@@ -57,7 +69,7 @@ class AddTenantRoute(BaseRoute):
                 email=data["email"],
                 password=data["password"],
                 phone=phone,
-                job_title=job_title,
+                job_title=data.get("job_title"),   # keep original case
                 photo_url=photo_url,
                 country=country,
                 city=city,
@@ -66,7 +78,7 @@ class AddTenantRoute(BaseRoute):
                 auth_id=auth_id
             )
 
-            # Serialize safe fields
+            # Serialize response
             user_data = {
                 "id": str(new_user.id),
                 "email": new_user.email,
@@ -83,9 +95,10 @@ class AddTenantRoute(BaseRoute):
                 "created_at": new_user.created_at.isoformat() if new_user.created_at else None
             }
 
-            logger.info(f"Added tenant user {new_user.email} by user {user_id}")
+            logger.info(f"Successfully added user {new_user.email} (job_title: {new_user.job_title})")
+            
             return success_response({
-                "message": "Tenant user created successfully",
+                "message": "User created successfully",
                 "user": user_data
             }, 201)
 
