@@ -22,23 +22,22 @@ class AddUserRoute(BaseRoute):
     def add_user(self):
         session = self.get_session()
         try:
-            # ─── Read JSON body ─────────────────────────────────────────────
+            # ─── Read JSON body FIRST ───────────────────────────────────────
             data = request.get_json()
             if not data:
                 return error_response("JSON body required", 400)
 
-            # Validate required fields
-            required_fields = ["first_name", "last_name", "email", "password", "job_title"]
+            # Validate required fields early
+            required_fields = ["first_name", "last_name", "email", "password", "role_name"]
             missing = [field for field in required_fields if field not in data]
             if missing:
                 return error_response(f"Missing required fields: {', '.join(missing)}", 400)
 
-            # Normalize job_title for comparison and lookup
-            job_title_raw = data["job_title"]
-            job_title_normalized = job_title_raw.strip().lower()
+            role_name = data["job_title"].strip().lower()   # normalize
 
-            # ─── Authorization decision ─────────────────────────────────────
-            requires_auth = job_title_normalized != "visitor"
+            # ─── Decide if authorization is required ────────────────────────
+            requires_auth = role_name != "visitor"
+
             user_id = None  # default: self-registration (visitor)
 
             if requires_auth:
@@ -58,10 +57,11 @@ class AddUserRoute(BaseRoute):
                 if not auth_result:
                     return error_response("Invalid or expired token", 401)
 
-                user_id = auth_result  # admin/manager who is creating the user
+                user_id = auth_result  # the admin / manager creating this user
 
             # ─── Optional fields ────────────────────────────────────────────
             phone = data.get("phone")
+            job_title = data.get("job_title")
             photo_url = data.get("photo_url")
             country = data.get("country")
             city = data.get("city")
@@ -78,7 +78,7 @@ class AddUserRoute(BaseRoute):
                 email=data["email"],
                 password=data["password"],
                 phone=phone,
-                job_title=job_title_raw,           # store original casing
+                job_title=job_title,
                 photo_url=photo_url,
                 country=country,
                 city=city,
@@ -87,20 +87,17 @@ class AddUserRoute(BaseRoute):
                 auth_id=auth_id
             )
 
-            # ─── Assign role based on job_title ─────────────────────────────
+            # ─── Assign role ────────────────────────────────────────────────
             retrieve_user_types = RetrieveUserTypes(session)
-            role_type = retrieve_user_types.get_by_name(job_title_normalized)
+            role_type = retrieve_user_types.get_by_name(data["job_title"])
 
             if not role_type:
-                return error_response(
-                    f"Invalid job_title: '{job_title_raw}' (no matching role found)",
-                    400
-                )
+                return error_response(f"Invalid role_name: {data['job_title']}", 400)
 
             add_user_roles = AddUserRoles(session)
             add_user_roles.add_role(new_user.id, role_type.id, event_id)
 
-            # ─── Prepare response ───────────────────────────────────────────
+            # ─── Prepare response data ──────────────────────────────────────
             user_data = {
                 "id": str(new_user.id),
                 "email": new_user.email,
@@ -108,26 +105,22 @@ class AddUserRoute(BaseRoute):
                 "first_name": new_user.first_name,
                 "last_name": new_user.last_name,
                 "display_name": new_user.display_name,
-                "job_title": new_user.job_title,  # original value
+                "job_title": new_user.job_title,
                 "photo_url": new_user.photo_url,
                 "country": new_user.country,
                 "city": new_user.city,
                 "company_id": str(new_user.company_id) if new_user.company_id else None,
                 "is_active": new_user.is_active,
-                "created_at": (
-                    new_user.created_at.isoformat() if new_user.created_at else None
-                ),
+                "created_at": new_user.created_at.isoformat() if new_user.created_at else None,
                 "roles": [{
-                    "name": new_user.job_title,  # or role_type.name if you prefer DB value
+                    "name": data["role_name"],
                     "event_id": str(event_id) if event_id else None
                 }]
             }
 
             logger.info(
-                f"User created: {new_user.email} | "
-                f"job_title: '{job_title_raw}' (normalized: '{job_title_normalized}') | "
-                f"event_id: {event_id} | "
-                f"by: {user_id or 'self-registration'}"
+                f"Added user {new_user.email} with role {data['role_name']} "
+                f"(event_id: {event_id}) by user {user_id or 'self-registration'}"
             )
 
             return success_response(
