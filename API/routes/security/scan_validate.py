@@ -9,12 +9,12 @@ from Models.ZoneScans.RetrieveZoneScans import RetrieveZoneScans
 from Models.EventAttendance.RetrieveEventAttendance import RetrieveEventAttendance
 from Models.ZoneScans.AddZoneScans import AddZoneScans
 from Models.EventAttendance.AddEventAttendance import AddEventAttendance
-from Models.Companies.RetrieveCompanies import RetrieveCompanies
 from Models.UserRoles.RetrieveUserRoles import RetrieveUserRoles
 from Models.Utility import validate_uuid
 import logging
 
 logger = logging.getLogger("api.routes.security.scan_validate")
+
 
 class ScanValidateRoute(BaseRoute):
     def __init__(self):
@@ -28,8 +28,8 @@ class ScanValidateRoute(BaseRoute):
     def scan_validate(self):
         session = self.get_session()
         try:
+            # ====================== AUTHENTICATION ======================
             auth_header = request.headers.get("Authorization")
-
             if not auth_header:
                 return error_response("Authorization header required", 401)
 
@@ -37,104 +37,120 @@ class ScanValidateRoute(BaseRoute):
             auth_result = self.auth_manager.authenticate_request(session, token)
             if not auth_result:
                 return error_response("Invalid or expired token", 401)
-            
+
             scanner_id = auth_result
 
-            # Check scanner role security
+            # Check scanner has security role
             retrieve_user_roles = RetrieveUserRoles(session)
             if not retrieve_user_roles.has_role_name(scanner_id, 'security'):
                 return error_response("Scanner must have security role", 403)
 
+            # ====================== INPUT VALIDATION ======================
             data = request.get_json()
             if not data:
                 return error_response("JSON body required", 400)
 
             access_token = data.get('access_token')
-            zone_id = data.get('zone_id')
             event_id = data.get('event_id')
+            zone_id = data.get('zone_id')
             action = data.get('action')
 
-            if not access_token or not zone_id or not action:
-                return error_response("access_token, zone_id, action required", 400)
+            if not access_token or not action:
+                return error_response("access_token and action are required", 400)
+
+            if bool(event_id) == bool(zone_id):
+                return error_response("Exactly one of event_id or zone_id is required", 400)
 
             access_token = validate_uuid(access_token, 'access_token')
-            zone_id = validate_uuid(zone_id, 'zone_id')
             if event_id:
                 event_id = validate_uuid(event_id, 'event_id')
+            if zone_id:
+                zone_id = validate_uuid(zone_id, 'zone_id')
+
             if action not in ['enter', 'exit']:
                 return error_response("action must be 'enter' or 'exit'", 400)
 
-            # 1. Get user by access_token
+            # ====================== GET USER ======================
             retrieve_users = RetrieveUsers(session)
             user = retrieve_users.get_by_access_token(access_token)
             if not user:
-                return error_response("Invalid access_token or inactive user", 400, status='inactive')
+                return success_response({
+                    "success": False,
+                    "status": "invalid_access_token",
+                    "message": "Invalid or inactive access token"
+                })
 
-            # 2. Get zone
-            retrieve_zones = RetrieveZones(session)
-            zone = retrieve_zones.get_by_id(zone_id)
-            if not zone:
-                return error_response("Zone not found", 404)
+            # ====================== RESOLVE TARGET (Event or Zone) ======================
+            target_type = None
+            target_id = None
+            event = None
+            zone = None
 
-            # 3. Get event
-            event = RetrieveEvents(session).get_by_id(event_id or zone.event_id)
-            if not event:
-                return error_response("Event not found", 404)
+            if event_id:
+                target_type = 'event'
+                target_id = event_id
+                event = RetrieveEvents(session).get_by_id(event_id)
+                if not event:
+                    return success_response({
+                        "success": False,
+                        "status": "event_not_found",
+                        "message": "Event not found"
+                    })
+            else:
+                target_type = 'zone'
+                retrieve_zones = RetrieveZones(session)
+                zone = retrieve_zones.get_by_id(zone_id)
+                if not zone:
+                    return success_response({
+                        "success": False,
+                        "status": "zone_not_found",
+                        "message": "Zone not found"
+                    })
+                event = RetrieveEvents(session).get_by_id(zone.event_id)
+                if not event:
+                    return success_response({
+                        "success": False,
+                        "status": "event_not_found",
+                        "message": "Event not found for this zone"
+                    })
+                target_id = zone_id
 
-            # 4. Check user roles exhib/visitor for event
-            user_roles = retrieve_user_roles.get_user_roles(user.id, event.id)
-            user_role_names = [r['type_name'] for r in user_roles]
-            if not any(role in ['exhibitor_staff', 'visitor'] for role in user_role_names):
-                return error_response("User role not authorized for event", 403, status='denied_role')
+            # ====================== DUPLICATE / TOGGLE CHECK ======================
+            latest = None
+            if event_id:
+                retrieve_target = RetrieveEventAttendance(session)
+                latest = retrieve_target.get_last_attendance(user.id, event_id)
+            else:
+                retrieve_target = RetrieveZoneScans(session)
+                latest = retrieve_target.get_last_scan(user.id, zone_id)
 
-            # 5. Check company match event/zone companies
-            retrieve_companies = RetrieveCompanies(session)
-            event_companies = set(c.id for c in retrieve_companies.get_by_event(event.id))
-            zone_companies = set(c.id for c in retrieve_companies.get_by_zone(zone.id))
-            if user.company_id not in event_companies or user.company_id not in zone_companies:
-                return error_response("User company not in event/zone", 403, status='denied_role')
+            if latest and latest.action == action:
+                deny_status = f"{target_type}_already_{action}"
+                return success_response({
+                    "success": False,
+                    "status": deny_status,
+                    "message": f"User already performed {action} for this {target_type}"
+                })
 
-            # 6. Last scans
-            retrieve_zone_scans = RetrieveZoneScans(session)
-            last_zone_scan = retrieve_zone_scans.get_last_scan(user.id, zone.id)
-            retrieve_event_att = RetrieveEventAttendance(session)
-            last_event_att = retrieve_event_att.get_last_attendance(user.id, event.id)
+            # ====================== RECORD THE SCAN ======================
+            if event_id:
+                add_event_att = AddEventAttendance(session)
+                add_event_att.record_scan(user.id, event_id, action, scanner_id)
+            else:
+                add_zone_scans = AddZoneScans(session)
+                add_zone_scans.record_scan(user.id, zone_id, action, scanner_id)
 
-            status = 'ok'
-            if action == 'enter':
-                if last_zone_scan and last_zone_scan.action == 'enter':
-                    status = 'already_in_zone'
-                if last_event_att and last_event_att.action == 'enter':
-                    status = 'already_in_event'
-                # Capacity check
-                if zone.capacity:
-                    occupancy = retrieve_zone_scans.get_zone_occupancy(zone.id)  # implement if needed
-                    if occupancy >= zone.capacity:
-                        status = 'capacity_full'
-            elif action == 'exit':
-                if last_zone_scan and last_zone_scan.action == 'exit':
-                    status = 'already_out_zone'
+            logger.info(f"Scan {action} successful for user {user.id} on {target_type} by scanner {scanner_id}")
 
-            if status != 'ok':
-                return error_response(status, 400, status=status)
-
-            # 7. Add scans
-            add_zone_scans = AddZoneScans(session)
-            add_zone_scans.record_scan(user.id, zone.id, scanner_id, action)
-
-            add_event_att = AddEventAttendance(session)
-            add_event_att.record_scan(user.id, event.id, scanner_id, action)
-
-            logger.info(f"Scan {action} for user {user.id} zone {zone.id} by scanner {scanner_id}")
-
+            # ====================== SUCCESS RESPONSE ======================
             return success_response({
                 "success": True,
-                "status": f"{action}_ok",
-                "message": f"{action.capitalize()} successful",
+                "status": f"{target_type}_{action}_ok",
+                "message": f"{action.capitalize()} {target_type} recorded successfully",
                 "user": {
                     "first_name": user.first_name,
                     "photo_url": user.photo_url,
-                    "roles": user_role_names
+                    "id": str(user.id)   # optional but useful
                 }
             })
 
@@ -142,5 +158,5 @@ class ScanValidateRoute(BaseRoute):
             logger.warning(f"Validation error in scan_validate: {ve}")
             return error_response(str(ve), 400)
         except Exception as e:
-            logger.error(f"Error in scan_validate: {e}")
+            logger.error(f"Error in scan_validate: {e}", exc_info=True)
             return error_response("Internal server error", 500)
