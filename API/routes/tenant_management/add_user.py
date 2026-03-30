@@ -112,6 +112,7 @@ class AddUserRoute(BaseRoute):
                 "display_name": new_user.display_name,
                 "job_title": new_user.job_title,  # original value
                 "photo_url": new_user.photo_url,
+                "company_name": new_user.company_name,
                 "country": new_user.country,
                 "city": new_user.city,
                 "company_id": str(new_user.company_id) if new_user.company_id else None,
