@@ -36,6 +36,8 @@ class UpdateUsers(BaseCRUD):
             kwargs['display_name'] = f'{kwargs["first_name"]} {kwargs["last_name"]}'.strip()
         if 'job_title' in kwargs:
             kwargs['job_title'] = validate_string(kwargs['job_title'], "job_title", max_length=200)
+        if 'company_name' in kwargs:
+            kwargs['company_name'] = validate_string(kwargs['company_name'], "company_name", max_length=500)
         if 'photo_url' in kwargs:
             kwargs['photo_url'] = validate_string(kwargs['photo_url'], "photo_url", max_length=500)
         if 'country' in kwargs:

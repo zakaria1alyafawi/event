@@ -66,6 +66,7 @@ class AddUserRoute(BaseRoute):
             country = data.get("country")
             city = data.get("city")
             company_id = data.get("company_id")
+            company_name = data.get("company_name")
             auth_provider = data.get("auth_provider", "email")
             auth_id = data.get("auth_id")
             event_id = data.get("event_id")
@@ -83,6 +84,7 @@ class AddUserRoute(BaseRoute):
                 country=country,
                 city=city,
                 company_id=company_id,
+                company_name=company_name,
                 auth_provider=auth_provider,
                 auth_id=auth_id
             )

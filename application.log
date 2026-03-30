@@ -10841,3 +10841,43 @@ DETAIL:  Key (phone)=(+12x3485678440) already exists.
 2026-03-26 21:37:57,965 - Models.BaseCRUD - INFO - Retrieved ZonesModel ID=cd395800-af74-41a4-85b1-9fc64be7eb53.
 2026-03-26 21:37:57,966 - Models.BaseCRUD - INFO - Retrieved EventsModel ID=5d193d6c-ee1b-4694-bd1b-d30c1e495741.
 2026-03-26 21:37:57,969 - werkzeug - INFO - 127.0.0.1 - - [26/Mar/2026 21:37:57] "POST /api/v1/scan_validate HTTP/1.1" 200 -
+2026-03-30 16:03:04,371 - Models - INFO - Models package initialized.
+2026-03-30 16:03:13,337 - Models - INFO - Models package initialized.
+2026-03-30 16:04:55,736 - Models - INFO - Models package initialized.
+2026-03-30 16:04:56,062 - Models.Configuration - INFO - Initializing Configuration...
+2026-03-30 16:04:56,062 - Models.Configuration - INFO - Configuration initialized successfully.
+2026-03-30 16:04:56,062 - Models.Session - INFO - Initializing DatabaseSession...
+2026-03-30 16:04:56,063 - Models.Configuration - INFO - Generating database URL...
+2026-03-30 16:04:56,365 - Models.Session - INFO - Database engine and session factory initialized successfully.
+2026-03-30 16:04:56,479 - Models.DatabaseInitializer - INFO - All tables created successfully.
+2026-03-30 16:04:56,479 - Models.Session - INFO - Creating a new database session...
+2026-03-30 16:04:56,479 - Models.DatabaseInitializer - INFO - === Starting DatabaseInitializer.initialize_records ===
+2026-03-30 16:04:56,484 - Models.DatabaseInitializer - INFO - Enum user_role already exists
+2026-03-30 16:04:56,490 - Models.DatabaseInitializer - INFO - Enum scan_action already exists
+2026-03-30 16:04:56,491 - Models.UserTypes.AddUserTypes - INFO - Adding UserType record with name=super_admin...
+2026-03-30 16:04:56,526 - Models.UserTypes.AddUserTypes - WARNING - UserType with name=super_admin already exists.
+2026-03-30 16:04:56,526 - Models.DatabaseInitializer - INFO - Seeded user_type super_admin
+2026-03-30 16:04:56,526 - Models.UserTypes.AddUserTypes - INFO - Adding UserType record with name=event_admin...
+2026-03-30 16:04:56,528 - Models.UserTypes.AddUserTypes - WARNING - UserType with name=event_admin already exists.
+2026-03-30 16:04:56,528 - Models.DatabaseInitializer - INFO - Seeded user_type event_admin
+2026-03-30 16:04:56,528 - Models.UserTypes.AddUserTypes - INFO - Adding UserType record with name=security...
+2026-03-30 16:04:56,529 - Models.UserTypes.AddUserTypes - WARNING - UserType with name=security already exists.
+2026-03-30 16:04:56,530 - Models.DatabaseInitializer - INFO - Seeded user_type security
+2026-03-30 16:04:56,530 - Models.UserTypes.AddUserTypes - INFO - Adding UserType record with name=exhibitor_staff...
+2026-03-30 16:04:56,531 - Models.UserTypes.AddUserTypes - WARNING - UserType with name=exhibitor_staff already exists.
+2026-03-30 16:04:56,531 - Models.DatabaseInitializer - INFO - Seeded user_type exhibitor_staff
+2026-03-30 16:04:56,531 - Models.UserTypes.AddUserTypes - INFO - Adding UserType record with name=visitor...
+2026-03-30 16:04:56,533 - Models.UserTypes.AddUserTypes - WARNING - UserType with name=visitor already exists.
+2026-03-30 16:04:56,533 - Models.DatabaseInitializer - INFO - Seeded user_type visitor
+2026-03-30 16:04:56,533 - Models.DatabaseInitializer - INFO - === User types seeded ===
+2026-03-30 16:04:56,533 - Models.Users.RetrieveUsers - INFO - Retrieving user by email=zakariaaalyafawi@gmail.com...
+2026-03-30 16:04:56,538 - Models.DatabaseInitializer - ERROR - Failed to initialize records: (psycopg2.errors.UndefinedColumn) column users.company_name does not exist
+LINE 1: ...users_city, users.company_id AS users_company_id, users.comp...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.phone AS users_phone, users.password_hash AS users_password_hash, users.auth_provider AS users_auth_provider, users.auth_id AS users_auth_id, users.first_name AS users_first_name, users.last_name AS users_last_name, users.display_name AS users_display_name, users.job_title AS users_job_title, users.photo_url AS users_photo_url, users.country AS users_country, users.city AS users_city, users.company_id AS users_company_id, users.company_name AS users_company_name, users.access_token AS users_access_token, users.token_expires_at AS users_token_expires_at, users.token_last_rotated_at AS users_token_last_rotated_at, users.is_active AS users_is_active, users.is_blacklisted AS users_is_blacklisted, users.deleted_at AS users_deleted_at, users.created_at AS users_created_at, users.updated_at AS users_updated_at 
+FROM users 
+WHERE users.email = %(email_1)s AND users.is_active = true AND users.deleted_at IS NULL 
+ LIMIT %(param_1)s]
+[parameters: {'email_1': 'zakariaaalyafawi@gmail.com', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)

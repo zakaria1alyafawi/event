@@ -107,7 +107,7 @@ class RetrieveUsers(BaseCRUD):
             }
             for ur in user.user_roles
         ]
-        profile["company_name"] = user.company.name if user.company else None
+        profile["company_name"] = user.company_name or (user.company.name if user.company else None)
         return profile
 
     def list_paginated(self, search=None, company_id=None, role_name=None, page=1, limit=20):
@@ -166,7 +166,7 @@ class RetrieveUsers(BaseCRUD):
                 "country": user.country,
                 "city": user.city,
                 "company_id": str(user.company_id) if user.company_id else None,
-                "company_name": user.company.name if user.company else None,
+                "company_name": user.company_name or (user.company.name if user.company else None),
                 "roles": roles,
                 "is_active": user.is_active,
                 "created_at": user.created_at.isoformat() if user.created_at else None

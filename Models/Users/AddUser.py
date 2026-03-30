@@ -15,7 +15,7 @@ class AddUsers(BaseCRUD):
     def __init__(self, session):
         super().__init__(session, UserModel)
 
-    def add(self, first_name, last_name, password, email=None, phone=None, job_title=None, photo_url=None, country=None, city=None, company_id=None, auth_provider='email', auth_id=None):
+    def add(self, first_name, last_name, password, email=None, phone=None, job_title=None, photo_url=None, country=None, city=None, company_id=None, company_name=None, auth_provider='email', auth_id=None):
         """
         Add a new UserModel record.
         """
@@ -38,6 +38,8 @@ class AddUsers(BaseCRUD):
             city = validate_string(city, "city", max_length=100)
         if company_id:
             company_id = validate_uuid(company_id, "company_id", optional=True)
+        if company_name:
+            company_name = validate_string(company_name, "company_name", max_length=255)
 
         display_name = f'{first_name} {last_name}'.strip()
 
@@ -56,6 +58,7 @@ class AddUsers(BaseCRUD):
             country=country,
             city=city,
             company_id=company_id,
+            company_name=company_name,
             is_active=True,
             is_blacklisted=False
         )
