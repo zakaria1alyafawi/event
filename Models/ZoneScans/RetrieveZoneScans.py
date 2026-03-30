@@ -2,6 +2,7 @@ from Models.BaseCRUD import BaseCRUD
 from Models.Utility import validate_uuid
 from .ZoneScans import ZoneScansModel
 from sqlalchemy import func
+from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger('Models.ZoneScans.RetrieveZoneScans')
@@ -79,3 +80,23 @@ class RetrieveZoneScans(BaseCRUD):
             ZoneScansModel.user_id == user_id,
             ZoneScansModel.zone_id == zone_id
         ).order_by(ZoneScansModel.scanned_at.desc()).first()
+
+    def get_daily_counts(self, days=7):
+        """
+        Get daily scan counts for the last `days` days, including zeros.
+        """
+        end_dt = datetime.now()
+        start_dt = end_dt - timedelta(days=days - 1)
+        query = self.session.query(
+            func.date(ZoneScansModel.scanned_at).label("date"),
+            func.count().label("count")
+        ).filter(
+            ZoneScansModel.scanned_at >= start_dt
+        ).group_by(func.date(ZoneScansModel.scanned_at)).order_by(func.date(ZoneScansModel.scanned_at).desc()).all()
+        results = {row.date: int(row.count) for row in query}
+        dates = []
+        current_date = end_dt.date()
+        for i in range(days):
+            date_obj = current_date - timedelta(days=i)
+            dates.append(date_obj)
+        return [{"date": d.strftime("%Y-%m-%d"), "count": results.get(d, 0)} for d in dates]

@@ -30,6 +30,8 @@ from API.routes.reset_password import ResetPasswordRoute
 from API.routes.kill_session import KillSessionRoute
 from API.routes.health import HealthRoute
 from API.routes.security.scan_validate import ScanValidateRoute
+from API.routes.companies.retrieve_company_images import RetrieveCompanyImagesRoute
+from API.routes.dashboard.dashboard import DashboardRoute
 
 from API.routes.errors import register_error_handlers
 import logging
@@ -71,7 +73,9 @@ def create_app():
     add_connection_route = AddConnectionRoute()
     kill_session_route = KillSessionRoute()
     scan_validte = ScanValidateRoute()
-    
+    companies_logos = RetrieveCompanyImagesRoute()
+    dashboard_route = DashboardRoute()
+
     app.register_blueprint(login_route.bp, url_prefix="/api/v1")
     app.register_blueprint(add_tenant_route.bp, url_prefix="/api/v1")
     app.register_blueprint(add_user_route.bp, url_prefix="/api/v1")
@@ -99,6 +103,8 @@ def create_app():
     app.register_blueprint(retrieve_connections_route.bp, url_prefix="/api/v1")
     app.register_blueprint(add_connection_route.bp, url_prefix="/api/v1")
     app.register_blueprint(scan_validte.bp, url_prefix="/api/v1")
+    app.register_blueprint(companies_logos.bp, url_prefix="/api/v1")
+    app.register_blueprint(dashboard_route.bp, url_prefix="/api/v1")
 
     # Register error handlers
     register_error_handlers(app)

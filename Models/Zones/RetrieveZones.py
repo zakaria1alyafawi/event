@@ -84,3 +84,11 @@ class RetrieveZones(BaseCRUD):
             zone_list.append(zone_dict)
 
         return {"data": zone_list, "total": total, "page": page, "limit": limit}
+
+    def count_active(self):
+        """
+        Count active (not deleted) zones.
+        """
+        return self.session.query(ZonesModel).filter(
+            ZonesModel.deleted_at.is_(None)
+        ).count()

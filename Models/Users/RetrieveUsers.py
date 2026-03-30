@@ -174,3 +174,21 @@ class RetrieveUsers(BaseCRUD):
             user_list.append(user_dict)
 
         return {"data": user_list, "total": total, "page": page, "limit": limit}
+
+    def count_by_role_grouped(self):
+        """
+        Return dict {role_name: count} for unique active users per role.
+        """
+        logger.info("Counting users by role...")
+        query = self.session.query(
+            UserTypesModel.name.label('role_name'),
+            func.count(func.distinct(UserModel.id)).label('count')
+        ).join(
+            UserRolesModel, UserModel.id == UserRolesModel.user_id
+        ).join(
+            UserTypesModel, UserRolesModel.role_id == UserTypesModel.id
+        ).filter(
+            UserModel.is_active == True,
+            UserModel.deleted_at.is_(None)
+        ).group_by(UserTypesModel.name).all()
+        return {row.role_name: int(row.count) for row in query}

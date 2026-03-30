@@ -109,3 +109,11 @@ class RetrieveEvents(BaseCRUD):
             event_list.append(event_dict)
 
         return {"data": event_list, "total": total, "page": page, "limit": limit}
+
+    def count_active(self):
+        """
+        Count active (not deleted) events.
+        """
+        return self.session.query(EventsModel).filter(
+            EventsModel.deleted_at.is_(None)
+        ).count()

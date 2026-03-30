@@ -7,6 +7,11 @@ from Models.Companies.Companies import CompaniesModel
 from Models.Zones.Zones import ZonesModel
 from Models.Events.Events import EventsModel
 from sqlalchemy.orm import joinedload
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from PIL import Image
+import io
 import logging
 
 logger = logging.getLogger("api.routes.companies.add_company")
@@ -35,23 +40,43 @@ class AddCompanyRoute(BaseRoute):
             
             user_id = auth_result
             
-            data = request.get_json()
-            if not data:
-                return error_response("JSON body required", 400)
+            if 'multipart' in request.content_type.lower():
+                form_data = request.form.to_dict()
+                logo_file = request.files.get('logo')
+            else:
+                form_data = request.get_json() or {}
+                logo_file = None
 
             required_fields = ["event_id", "zone_id", "name"]
-            missing = [field for field in required_fields if field not in data]
+            missing = [field for field in required_fields if field not in form_data]
             if missing:
                 return error_response(f"Missing required fields: {', '.join(missing)}", 400)
 
             kwargs = {
-                "event_id": data["event_id"],
-                "zone_id": data["zone_id"],
-                "name": data["name"]
+                "event_id": form_data["event_id"],
+                "zone_id": form_data["zone_id"],
+                "name": form_data["name"]
             }
             for field in ["booth_number", "slug", "logo_url", "description", "website", "industry", "email", "phone"]:
-                if field in data:
-                    kwargs[field] = data[field]
+                if field in form_data:
+                    kwargs[field] = form_data[field]
+
+            if logo_file and logo_file.filename:
+                try:
+                    logo_file.seek(0)
+                    image = Image.open(io.BytesIO(logo_file.read()))
+                    allowed_formats = ('JPEG', 'PNG', 'GIF', 'WEBP')
+                    if image.format not in allowed_formats:
+                        return error_response("Invalid image format. Allowed: JPEG, PNG, GIF, WEBP", 400)
+                    ext = f".{image.format.lower()}"
+                    filename = f"{uuid.uuid4().hex}{ext}"
+                    path = os.path.join('static', 'companies', 'logos', filename)
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    image.save(path)
+                    kwargs['logo_url'] = f"companies/logos/{filename}"
+                except Exception as e:
+                    logger.error(f"Image processing error: {e}")
+                    return error_response("Invalid image file", 400)
 
             add_companies = AddCompanies(session)
             new_company = add_companies.add(**kwargs)
