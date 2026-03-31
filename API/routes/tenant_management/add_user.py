@@ -2,7 +2,6 @@ from flask import request
 from API.routes.base import BaseRoute
 from API.utils.responses import success_response, error_response
 from API.middleware.auth import AuthManager
-from Models.Users.AddUser import AddUsers
 from Models.UserTypes.RetrieveUserTypes import RetrieveUserTypes
 from Models.UserRoles.AddUserRoles import AddUserRoles
 import logging
@@ -20,6 +19,8 @@ class AddUserRoute(BaseRoute):
         self.bp.route("/add_user", methods=["POST"])(self.add_user)
 
     def add_user(self):
+        from Models.Users.AddUser import AddUsers
+
         session = self.get_session()
         try:
             # ─── Read JSON body ─────────────────────────────────────────────

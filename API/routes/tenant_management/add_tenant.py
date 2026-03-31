@@ -2,7 +2,6 @@ from flask import request
 from API.routes.base import BaseRoute
 from API.utils.responses import success_response, error_response
 from API.middleware.auth import AuthManager
-from Models.Users.AddUser import AddUsers
 import logging
 
 logger = logging.getLogger("api.routes.tenant_management.add_tenant")
@@ -17,6 +16,8 @@ class AddTenantRoute(BaseRoute):
         self.bp.route("/add_tenant", methods=["POST"])(self.add_tenant)
 
     def add_tenant(self):
+        from Models.Users.AddUser import AddUsers
+
         session = self.get_session()
         try:
             data = request.get_json()

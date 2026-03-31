@@ -14,7 +14,7 @@ class UserTypesModel(Base):
     __tablename__ = 'user_types'
 
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text('gen_random_uuid()'))
-    name = Column(ENUM('super_admin', 'event_admin', 'security', 'exhibitor_staff', 'visitor', name='user_role', create_constraint=False), nullable=False)
+    name = Column(ENUM('super_admin', 'event_admin', 'security', 'exhibitor_staff', 'visitor', 'media', name='user_role', create_constraint=False), nullable=False)
     description = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

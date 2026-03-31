@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from datetime import datetime
 from Models.Configuration import Configuration
 from Models.Session import DatabaseSession
-from Models.Users.AddUser import AddUsers
+from Models.UserRoles.AddUserRoles import AddUserRoles
 # from Models.Users.RetrieveUsers import RetrieveUsers
 # from Models.Users.UpdateUser import UpdateUsers
 # from Models.Users.DeleteUser import DeleteUser
@@ -36,20 +36,13 @@ session = db_session.get_session()
 try:
     # --- INSERTION ---
     print("Inserting a new record into Users table...")
-    adder = AddUsers(session)
+    adder = AddUserRoles(session)
     created_at = datetime.now()
-    new_record = adder.add(
-        first_name= "John",
-        last_name= "Doe",
-        email= "moathf@zz.com",
-        password= "SecurePass123!",
-        phone= "+12x348fي5s67z884z40",
-        job_title= "media",
-        photo_url= "https://example.com/photo.jpg",
-        country= "USA",
-        company_name="شركة الاتجاد",
-        city= "NYC",
-        auth_provider= "email"    )
+    new_record = adder.add_role(
+        user_id="bf6aacd9-5ed5-4052-bda8-6947094096e2",
+        role_id="b0889d07-c8b7-410b-baf3-f7910f64449d",
+        
+        )
     print(f"Inserted Record: {new_record}")
 
     # # # --- SELECTION ---

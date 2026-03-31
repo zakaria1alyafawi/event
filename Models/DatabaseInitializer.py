@@ -55,7 +55,7 @@ class DatabaseInitializer:
         try:
             # Create enums
             enums = {
-                'user_role': ['super_admin', 'event_admin', 'security', 'media' 'exhibitor_staff', 'visitor'],
+                'user_role': ['super_admin', 'event_admin', 'security', 'media', 'exhibitor_staff', 'visitor'],
                 'scan_action': ['enter', 'exit']
             }
             for enum_name, values in enums.items():
