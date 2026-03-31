@@ -55,7 +55,7 @@ class DatabaseInitializer:
         try:
             # Create enums
             enums = {
-                'user_role': ['super_admin', 'event_admin', 'security', 'exhibitor_staff', 'visitor'],
+                'user_role': ['super_admin', 'event_admin', 'security', 'media' 'exhibitor_staff', 'visitor'],
                 'scan_action': ['enter', 'exit']
             }
             for enum_name, values in enums.items():
@@ -80,7 +80,8 @@ class DatabaseInitializer:
                 ('event_admin', 'event organizer/manager'),
                 ('security', 'gate/zone validators'),
                 ('exhibitor_staff', 'company booth staff'),
-                ('visitor', 'normal attendees')
+                ('visitor', 'normal attendees'),
+                ('media', 'media visitor'),
             ]
             add_user_types = AddUserTypes(session)
             for name, desc in user_types_data:

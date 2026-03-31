@@ -7,8 +7,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from datetime import datetime
 from Models.Configuration import Configuration
 from Models.Session import DatabaseSession
-# from Models.Users.AddUser import AddUsers
-from Models.Users.RetrieveUsers import RetrieveUsers
+from Models.Users.AddUser import AddUsers
+# from Models.Users.RetrieveUsers import RetrieveUsers
 # from Models.Users.UpdateUser import UpdateUsers
 # from Models.Users.DeleteUser import DeleteUser
 # from Models.Users.Users import StatusEnum
@@ -20,7 +20,7 @@ config = Configuration(
     password="1234",  # Replace with your database password
     host="localhost",  # Replace with your database host
     port="5432",  # Replace with your database port
-    database="vision"  # Replace with your database name
+    database="event"  # Replace with your database name
 )
 
 # Step 2: Initialize database session
@@ -34,41 +34,41 @@ session = db_session.get_session()
 
 # Testing CRUD operations
 try:
-    # # --- INSERTION ---
-    # print("Inserting a new record into Users table...")
-    # adder = AddUsers(session)
-    # created_at = datetime.now()
-    # new_record = adder.add(
-    #     FirstName="TestDataSource",
-    #     LastName="zakaria",
-    #     Phone="558",
-    #     Email="zha@gmail.com",
-    #     Password="8567",
-    #     Type=UserTypeEnum.Tenant.value,  # Make sure this references a valid UserType TypeID
-    #     TenantID=1,
-    #     Status=StatusEnum.ACTIVE,
-    #     Created_at=created_at,
-    #     Created_by=1
-    # )
-    # print(f"Inserted Record: {new_record}")
+    # --- INSERTION ---
+    print("Inserting a new record into Users table...")
+    adder = AddUsers(session)
+    created_at = datetime.now()
+    new_record = adder.add(
+        first_name= "John",
+        last_name= "Doe",
+        email= "moathf@cيozmxpany.com",
+        password= "SecurePass123!",
+        phone= "+12x348fي5s6788440",
+        job_title= "media",
+        photo_url= "https://example.com/photo.jpg",
+        country= "USA",
+        company_name="شركة الاتجاد",
+        city= "NYC",
+        auth_provider= "email"    )
+    print(f"Inserted Record: {new_record}")
 
-    # --- SELECTION ---
-    print("Retrieving all records...")
-    retriever = RetrieveUsers(session)
-    all_records = retriever.validate_login(email="zakariaaalyafawi@gmail.com", plain_password="Abcdef@12345")
-    # all_records = retriever.get_by_id(1)
-    from API.utils.encryption import PasswordHasher
+    # # # --- SELECTION ---
+    # # print("Retrieving all records...")
+    # # retriever = RetrieveUsers(session)
+    # # all_records = retriever.validate_login(email="zakariaaalyafawi@gmail.com", plain_password="Abcdef@12345")
+    # # # all_records = retriever.get_by_id(1)
+    # # from API.utils.encryption import PasswordHasher
 
-    pw = "Abcdef@12345"
-    h1 = PasswordHasher.hash_password(pw)
-    h2 = PasswordHasher.hash_password(pw)
+    # pw = "Abcdef@12345"
+    # h1 = PasswordHasher.hash_password(pw)
+    # h2 = PasswordHasher.hash_password(pw)
 
-    print(h1)
-    print(h2)
-    print("Are they different? →", h1 != h2)          # True
-    print("But verify works?  →", PasswordHasher.verify_password(pw, h1))   # True
-    print("And also on h2?   →", PasswordHasher.verify_password(pw, h2))   # True
-    print(f"All Records: {all_records}")
+    # print(h1)
+    # print(h2)
+    # print("Are they different? →", h1 != h2)          # True
+    # print("But verify works?  →", PasswordHasher.verify_password(pw, h1))   # True
+    # print("And also on h2?   →", PasswordHasher.verify_password(pw, h2))   # True
+    # print(f"All Records: {all_records}")
 
     # retriever = RetrieveUsers(session)
     # # retrieved_record = retriever.get_by_id(1)

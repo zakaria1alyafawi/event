@@ -23,7 +23,7 @@ class RetrieveUserTypes(BaseCRUD):
         """
         Retrieve UserType by name.
         """
-        user_role_values = ['super_admin', 'event_admin', 'security', 'exhibitor_staff', 'visitor']
+        user_role_values = ['super_admin', 'event_admin', 'security', 'exhibitor_staff', 'visitor', 'media']
         name = validate_enum(name, "name", user_role_values)
         logger.info(f"Retrieving UserType by name={name}...")
         return self.session.query(UserTypesModel).filter(UserTypesModel.name == name).first()

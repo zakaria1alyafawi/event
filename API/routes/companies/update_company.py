@@ -8,6 +8,11 @@ from Models.Zones.Zones import ZonesModel
 from Models.Events.Events import EventsModel
 from Models.Utility import validate_uuid
 from sqlalchemy.orm import joinedload
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from PIL import Image
+import io
 import logging
 
 logger = logging.getLogger("api.routes.companies.update_company")
@@ -36,13 +41,36 @@ class UpdateCompanyRoute(BaseRoute):
             
             user_id = auth_result
             
-            data = request.get_json()
-            if not data or 'id' not in data:
+            if 'multipart' in request.content_type.lower():
+                form_data = request.form.to_dict()
+                logo_file = request.files.get('logo')
+            else:
+                form_data = request.get_json() or {}
+                logo_file = None
+
+            if not form_data or 'id' not in form_data:
                 return error_response("Company ID required in body", 400)
 
-            id = validate_uuid(data['id'], "company_id")
+            id = validate_uuid(form_data['id'], "company_id")
 
-            update_kwargs = {k: v for k, v in data.items() if k != 'id'}
+            update_kwargs = {k: v for k, v in form_data.items() if k != 'id'}
+
+            if logo_file and logo_file.filename:
+                try:
+                    logo_file.seek(0)
+                    image = Image.open(io.BytesIO(logo_file.read()))
+                    allowed_formats = ('JPEG', 'PNG', 'GIF', 'WEBP')
+                    if image.format not in allowed_formats:
+                        return error_response("Invalid image format. Allowed: JPEG, PNG, GIF, WEBP", 400)
+                    ext = f".{image.format.lower()}"
+                    filename = f"{uuid.uuid4().hex}{ext}"
+                    path = os.path.join('static', 'companies', 'logos', filename)
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    image.save(path)
+                    update_kwargs['logo_url'] = f"companies/logos/{filename}"
+                except Exception as e:
+                    logger.error(f"Image processing error: {e}")
+                    return error_response("Invalid image file", 400)
 
             update_companies = UpdateCompanies(session)
             updated_company = update_companies.update(id, **update_kwargs)

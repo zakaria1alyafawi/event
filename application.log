@@ -14991,3 +14991,5 @@ WHERE users.email = %(email_1)s AND users.is_active = true AND users.deleted_at 
 2026-03-30 22:45:35,056 - Models.Sessions.RetrieveSessions - INFO - Retrieved 1 record(s) with token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDY3MDRkOTQtNTI3YS00NzAxLThhZGMtNTE2MTg5YzYyMGJjIiwiZXhwIjoxNzc0OTAzMTA4LCJpYXQiOjE3NzQ4OTk1MDh9.P817izpvIp7wY9UmtQZDQwbpZ39Ci_Ake8LInUvKz38.
 2026-03-30 22:45:35,057 - Models.Users.RetrieveUsers - INFO - Counting users by role...
 2026-03-30 22:45:35,102 - werkzeug - INFO - 127.0.0.1 - - [30/Mar/2026 22:45:35] "GET /api/v1/dashboard HTTP/1.1" 200 -
+2026-03-31 23:19:32,277 - Models - INFO - Models package initialized.
+2026-03-31 23:32:07,673 - Models - INFO - Models package initialized.

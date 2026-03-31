@@ -33,7 +33,13 @@ class UpdateUsers(BaseCRUD):
             kwargs['first_name'] = validate_string(kwargs['first_name'], "first_name", max_length=100)
         if 'last_name' in kwargs:
             kwargs['last_name'] = validate_string(kwargs['last_name'], "last_name", max_length=100)
-            kwargs['display_name'] = f'{kwargs["first_name"]} {kwargs["last_name"]}'.strip()
+        if 'first_name' in kwargs or 'last_name' in kwargs:
+            existing = self.get_by_id(id)
+            if not existing:
+                raise ValueError("User not found")
+            first_name = kwargs.get('first_name', existing.first_name or '')
+            last_name = kwargs.get('last_name', existing.last_name or '')
+            kwargs['display_name'] = f'{first_name} {last_name}'.strip()
         if 'job_title' in kwargs:
             kwargs['job_title'] = validate_string(kwargs['job_title'], "job_title", max_length=200)
         if 'company_name' in kwargs:
