@@ -4,7 +4,6 @@ from .Connections import ConnectionsModel
 import logging
 from sqlalchemy.orm import joinedload
 from Models.Users.Users import UserModel
-
 logger = logging.getLogger('Models.Connections.RetrieveConnections')
 
 class RetrieveConnections(BaseCRUD):
@@ -28,18 +27,20 @@ class RetrieveConnections(BaseCRUD):
         logger.info(f'Retrieving connections for user {user_id}')
         return query.order_by(ConnectionsModel.scanned_at.desc()).all()
 
-    def list_paginated(self, user_id, page=1, limit=20):
-        '''Paginated connections with optimized role + company loading.'''
 
+    def list_paginated(self, user_id, page=1, limit=20):
+        '''Paginated connections with proper company name logic based on role.'''
+        from Models.UserRoles.UserRoles import UserRolesModel   # Add this import
         page = max(1, page)
         limit = min(100, max(1, limit))
 
+        # Optimized eager loading
         query = self.session.query(ConnectionsModel).options(
             joinedload(ConnectionsModel.connected_to)
-                .joinedload(UserModel.company),
+                .joinedload(UserModel.company),                    # For exhibitor_staff etc.
             joinedload(ConnectionsModel.connected_to)
-                .joinedload(UserModel.user_roles)
-                .joinedload("role")          # Load the UserTypesModel
+                .selectinload(UserModel.user_roles)                # Better for one-to-many
+                .joinedload(UserRolesModel.role)
         ).filter(ConnectionsModel.user_id == user_id)
 
         total = query.count()
@@ -55,14 +56,23 @@ class RetrieveConnections(BaseCRUD):
             if not conn_user:
                 continue
 
-            # Check if user has visitor role
-            is_visitor = any(
-                ur.role and ur.role.name == 'visitor' 
-                for ur in conn_user.user_roles
-            )
+            # === NEW LOGIC AS PER YOUR REQUIREMENT ===
+            company_name = None
 
-            company_name = conn_user.company_name if is_visitor else \
-                        (conn_user.company.name if conn_user.company else None)
+            # Check roles (a user can have multiple roles, but we prioritize)
+            roles = [ur.role.name for ur in conn_user.user_roles if ur.role]
+
+            if 'visitor' in roles:
+                # For visitors → use company_name column from users table
+                company_name = conn_user.company_name
+
+            elif 'exhibitor_staff' in roles:
+                # For exhibitor_staff → use company.name from Companies table (via company_id FK)
+                company_name = conn_user.company.name if conn_user.company else None
+
+            # You can extend this for other roles if needed
+            # else:
+            #     company_name = conn_user.company.name if conn_user.company else conn_user.company_name
 
             connection_list.append({
                 "email": conn_user.email,
@@ -72,7 +82,9 @@ class RetrieveConnections(BaseCRUD):
                 "display_name": conn_user.display_name,
                 "job_title": conn_user.job_title,
                 "photo_url": conn_user.photo_url,
-                "company_name": company_name
+                "company_name": company_name,
+                # Optional: also return the roles for frontend if useful
+                # "roles": roles
             })
 
         return {
