@@ -29,22 +29,41 @@ class RetrieveConnections(BaseCRUD):
         return query.order_by(ConnectionsModel.scanned_at.desc()).all()
 
     def list_paginated(self, user_id, page=1, limit=20):
-        '''Paginated connections for user.'''
+        '''Paginated connections with optimized role + company loading.'''
+
         page = max(1, page)
         limit = min(100, max(1, limit))
+
         query = self.session.query(ConnectionsModel).options(
-            joinedload(ConnectionsModel.connected_to).joinedload(UserModel.company)
+            joinedload(ConnectionsModel.connected_to)
+                .joinedload(UserModel.company),
+            joinedload(ConnectionsModel.connected_to)
+                .joinedload(UserModel.user_roles)
+                .joinedload("role")          # Load the UserTypesModel
         ).filter(ConnectionsModel.user_id == user_id)
 
         total = query.count()
-
-        query = query.order_by(ConnectionsModel.scanned_at.desc()).offset((page - 1) * limit).limit(limit)
-
-        connections = query.all()
+        
+        connections = query.order_by(ConnectionsModel.scanned_at.desc()) \
+                        .offset((page - 1) * limit) \
+                        .limit(limit) \
+                        .all()
 
         connection_list = []
         for conn in connections:
             conn_user = conn.connected_to
+            if not conn_user:
+                continue
+
+            # Check if user has visitor role
+            is_visitor = any(
+                ur.role and ur.role.name == 'visitor' 
+                for ur in conn_user.user_roles
+            )
+
+            company_name = conn_user.company_name if is_visitor else \
+                        (conn_user.company.name if conn_user.company else None)
+
             connection_list.append({
                 "email": conn_user.email,
                 "phone": conn_user.phone,
@@ -53,7 +72,12 @@ class RetrieveConnections(BaseCRUD):
                 "display_name": conn_user.display_name,
                 "job_title": conn_user.job_title,
                 "photo_url": conn_user.photo_url,
-                "company_name": conn_user.company.name if conn_user.company else None
+                "company_name": company_name
             })
 
-        return {"data": connection_list, "total": total, "page": page, "limit": limit}
+        return {
+            "data": connection_list,
+            "total": total,
+            "page": page,
+            "limit": limit
+        }

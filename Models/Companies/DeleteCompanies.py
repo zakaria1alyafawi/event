@@ -2,8 +2,7 @@ from Models.BaseCRUD import BaseCRUD
 from Models.Utility import validate_uuid
 from .Companies import CompaniesModel
 import logging
-from datetime import datetime
-
+from datetime import datetime, timezone
 logger = logging.getLogger('Models.Companies.DeleteCompanies')
 
 class DeleteCompanies(BaseCRUD):
@@ -22,7 +21,8 @@ class DeleteCompanies(BaseCRUD):
         if not company:
             logger.warning(f'Company {id} not found.')
             return False
-        company.deleted_at = datetime.utcnow()
+        company.deleted_at = datetime.now(timezone.utc)
+        company.updated_at = datetime.now(timezone.utc)
         try:
             self.session.commit()
             logger.info(f'Company {id} soft deleted.')

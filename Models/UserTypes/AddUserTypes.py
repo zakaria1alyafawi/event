@@ -20,7 +20,7 @@ class AddUserTypes(BaseCRUD):
             name (str): user_role enum value.
             description (str): Description.
         """
-        user_role_values = ['super_admin', 'event_admin', 'security', 'exhibitor_staff', 'visitor']
+        user_role_values = ['super_admin', 'event_admin', 'security', 'exhibitor_staff', 'visitor', 'media']
         name = validate_enum(name, "name", user_role_values)
         if description:
             description = validate_string(description, "description", max_length=500)

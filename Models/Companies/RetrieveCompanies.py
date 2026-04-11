@@ -22,7 +22,7 @@ class RetrieveCompanies(BaseCRUD):
         event_id = validate_uuid(event_id, 'event_id')
         logger.info(f'Retrieving companies for event {event_id}')
         return self.session.query(CompaniesModel).filter(
-            CompaniesModel.event_id == event_id).all()
+            CompaniesModel.event_id == event_id, CompaniesModel.deleted_at.is_(None)).all()
 
     def get_by_zone(self, zone_id):
         """
@@ -93,7 +93,7 @@ class RetrieveCompanies(BaseCRUD):
         '''Paginated companies with filters.'''
         page = max(1, page)
         limit = min(100, max(1, limit))
-        query = self.session.query(CompaniesModel)
+        query = self.session.query(CompaniesModel).filter(CompaniesModel.deleted_at.is_(None))
         if event_id:
             event_id = validate_uuid(event_id, "event_id")
             query = query.filter(CompaniesModel.event_id == event_id)
