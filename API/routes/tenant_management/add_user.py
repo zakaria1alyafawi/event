@@ -39,7 +39,7 @@ class AddUserRoute(BaseRoute):
             job_title_normalized = job_title_raw.strip().lower()
 
             # ─── Authorization decision ─────────────────────────────────────
-            requires_auth = job_title_normalized != "visitor" or job_title_normalized != "media" 
+            requires_auth = job_title_normalized not in ("visitor", "media")
             user_id = None  # default: self-registration (visitor)
 
             if requires_auth:
