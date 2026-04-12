@@ -28,7 +28,7 @@ class UpdateCompanies(BaseCRUD):
         if 'booth_number' in kwargs:
             kwargs['booth_number'] = validate_string(kwargs['booth_number'], 'booth_number', max_length=50)
         if 'slug' in kwargs:
-            kwargs['slug'] = validate_string(kwargs['slug'], 'slug', max_length=100)
+            kwargs['slug'] = kwargs['slug']
         if 'logo_url' in kwargs:
             kwargs['logo_url'] = validate_string(kwargs['logo_url'], 'logo_url', max_length=500)
         if 'description' in kwargs:
