@@ -56,6 +56,13 @@ class UpdateUsers(BaseCRUD):
             kwargs['is_active'] = validate_bool(kwargs['is_active'], "is_active")
         if 'is_blacklisted' in kwargs:
             kwargs['is_blacklisted'] = validate_bool(kwargs['is_blacklisted'], "is_blacklisted")
+        if 'age' in kwargs and kwargs['age'] is not None:
+            try:
+                kwargs['age'] = int(kwargs['age'])
+            except (ValueError, TypeError):
+                raise ValueError("age must be a valid integer")
+        if 'gender' in kwargs:
+            kwargs['gender'] = validate_string(kwargs['gender'], "gender", max_length=20)
 
         logger.info(f"Updating user record with id={id}...")
         try:

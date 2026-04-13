@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy import Column, String, Text, DateTime, Boolean, UniqueConstraint, Index, text, func, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, UniqueConstraint, Index, text, func, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from Models.Base import Base
@@ -28,6 +28,8 @@ class UserModel(Base):
     photo_url = Column(Text)
     country = Column(String(100))
     city = Column(String(100))
+    age = Column(Integer, nullable=True)
+    gender = Column(String(20), nullable=True)
     company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id', ondelete='SET NULL'), nullable=True)
     company_name = Column(String(255), nullable=True)
     access_token = Column(UUID(as_uuid=True), unique=True, server_default=text('gen_random_uuid()'))
@@ -56,7 +58,7 @@ class UserModel(Base):
     user_roles = relationship("UserRolesModel", back_populates="user")
 
 
-    def __init__(self, email=None, phone=None, password_hash=None, auth_provider='email', auth_id=None, first_name=None, last_name=None, display_name=None, job_title=None, photo_url=None, country=None, city=None, company_id=None, company_name=None, access_token=None, token_expires_at=None, token_last_rotated_at=None, is_active=True, is_blacklisted=False, deleted_at=None):
+    def __init__(self, email=None, phone=None, password_hash=None, auth_provider='email', auth_id=None, first_name=None, last_name=None, display_name=None, job_title=None, photo_url=None, country=None, city=None, age=None, gender=None, company_id=None, company_name=None, access_token=None, token_expires_at=None, token_last_rotated_at=None, is_active=True, is_blacklisted=False, deleted_at=None):
         self.email = email
         self.phone = phone
         self.password_hash = password_hash
@@ -69,6 +71,8 @@ class UserModel(Base):
         self.photo_url = photo_url
         self.country = country
         self.city = city
+        self.age = age
+        self.gender = gender
         self.company_id = company_id
         self.company_name = company_name
         self.access_token = access_token

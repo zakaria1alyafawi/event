@@ -165,6 +165,8 @@ class RetrieveUsers(BaseCRUD):
                 "photo_url": user.photo_url,
                 "country": user.country,
                 "city": user.city,
+                "age": user.age,
+                "gender": user.gender,
                 "company_id": str(user.company_id) if user.company_id else None,
                 "company_name": user.company_name or (user.company.name if user.company else None),
                 "roles": roles,

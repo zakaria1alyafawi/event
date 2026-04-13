@@ -71,7 +71,8 @@ class AddUserRoute(BaseRoute):
             auth_provider = data.get("auth_provider", "email")
             auth_id = data.get("auth_id")
             event_id = data.get("event_id")
-
+            age = data.get("age")
+            gender = data.get("gender")
             # ─── Create user ────────────────────────────────────────────────
             adder = AddUsers(session)
             new_user = adder.add(
@@ -87,7 +88,9 @@ class AddUserRoute(BaseRoute):
                 company_id=company_id,
                 company_name=company_name,
                 auth_provider=auth_provider,
-                auth_id=auth_id
+                auth_id=auth_id,
+                age=age,
+                gender=gender
             )
 
             # ─── Assign role based on job_title ─────────────────────────────
@@ -116,6 +119,8 @@ class AddUserRoute(BaseRoute):
                 "company_name": new_user.company_name,
                 "country": new_user.country,
                 "city": new_user.city,
+                "age": new_user.age,
+                "gender": new_user.gender,
                 "company_id": str(new_user.company_id) if new_user.company_id else None,
                 "is_active": new_user.is_active,
                 "created_at": (
